@@ -1,0 +1,5 @@
+Model Architecture,Top-1 Accuracy (%),Best Epoch,Parameters (M),Delta Parameters
+Baseline,90.86,186,2.24,+0.000M
+SE (r=24),90.99,175,2.62,+0.383M
+CBAM (r=24),90.04,194,2.61,+0.378M
+CA (r=32),91.16,165,2.68,+0.446M

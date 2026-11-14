@@ -1,3 +1,52 @@
+# Coordinate Attention Reproduction (ImageNette-320)
+
+## 1. Original Repository
+* **Official Repository:** [Andrew-Qibin/CoordAttention](https://github.com/Andrew-Qibin/CoordAttention)
+* **Reference Paper:** *Coordinate Attention for Efficient Mobile Network Design* (Hou et al., CVPR 2021)
+
+## 2. Summary of Changes
+To adapt the authors' ImageNet-1K implementation to our 3-GPU SLURM environment and benchmark against Squeeze-and-Excitation (SE) and CBAM on the 10-class ImageNette-320 subset, we preserved the exact `MBV2_CA` and `CoordAtt` layer architecture (16 Coordinate Attention modules on expanded bottlenecks, `h_swish` activations, explicit spatial tensor expansions, and `nn.Dropout(0.1)`) while adding the following:
+
+* **`train_all_models.py`**: Unified distributed training script (`DistributedDataParallel`) implementing the authors' `MBV2_CA` alongside comparative `SE` ($r=24$), `CBAM` ($r=24$), and `Baseline` (no attention) models with identical initialization and CVPR 2021 optimization settings (200 epochs, SGD with momentum $0.9$, weight decay $4 \times 10^{-5}$, cosine annealing LR schedule, and no extra augmentations).
+* **`run_all_models.sh`**: SLURM batch script configured for a 3-GPU node (`--ntasks=3 --gpus=3`, local batch size $64$, effective batch size $192$, learning rate $0.05$).
+* **`evaluate_all_results.py`**: Automated checkpoint evaluator that computes Top-1 validation accuracy and parameter counts, exporting the results to `experiment_results.csv`.
+* **`generate_all_gradcam.py`**: Grad-CAM visualization script hooking the final inverted residual stage (`model.features[-1]`) to generate spatial attention heatmaps in `gradcam_results/`.
+
+## 3. How to Reproduce the Baseline and Attention Models
+
+### Prerequisites & Dataset Setup
+1. Install dependencies (`torch`, `torchvision`, `opencv-python`, `matplotlib`, `Pillow`).
+2. Download and extract the ImageNette-320 dataset into the project directory:
+   ```bash
+   wget https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-320.tgz
+   tar -xzf imagenette2-320.tgz
+   ```
+
+### Running the Baseline (and All Comparative Models)
+* **On a 3-GPU SLURM Cluster:**
+  Update `DATA_DIR` in `run_all_models.sh` to point to your `imagenette2-320` path and submit the job:
+  ```bash
+  sbatch run_all_models.sh
+  ```
+* **Reproducing the MobileNetV2 Baseline Standalone (Single GPU):**
+  ```bash
+  python train_all_models.py \
+      --data-dir ./imagenette2-320 \
+      --attention none \
+      --epochs 200 \
+      --batch-size 64 \
+      --lr 0.05 \
+      --output-dir experiments/baseline
+  ```
+* **Evaluating Checkpoints & Generating Grad-CAMs:**
+  ```bash
+  python evaluate_all_results.py
+  python generate_all_gradcam.py
+  ```
+
+---
+*(Original Authors' README below)*
+
 # Coordinate Attention for Efficient Mobile Network Design ([preprint](https://arxiv.org/abs/2103.02907))
 
 This repository is a PyTorch implementation of our coordinate attention (will appear in CVPR2021).
